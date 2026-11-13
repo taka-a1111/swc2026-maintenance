@@ -17,7 +17,7 @@ def rep(old, new, n=1):
 
 # BUILD_TAG
 rep('<!-- BUILD_TAG: swt2026_maintenance_ver2.3 / 2026-11-12 -->',
-    '<!-- BUILD_TAG: swc2026_maintenance_ver1.0 / 2026-11-12 -->')
+    '<!-- BUILD_TAG: swc2026_maintenance_ver1.1 / 2026-11-13 -->')
 
 # チーム名
 rep('サイエンスウェブ株式会社 SWT</title>', 'サイエンスウェブ株式会社 SWC</title>')
@@ -72,3 +72,27 @@ d.text(((W - (bb[2] - bb[0])) / 2 - bb[0], (H - (bb[3] - bb[1])) / 2 - bb[1]), t
 d.line([(W - (bb[2] - bb[0])) / 2, H - 6, (W + (bb[2] - bb[0])) / 2, H - 6], fill=NAVY, width=3)
 im.save(out / 'images' / 'mail-maintenance.png', optimize=True)
 print('ok', len(t))
+
+# ver1.1（11/13 永田様の初校確認）
+# 1 表記は「サーバー」に統一
+import re, base64
+t = (out / 'index.html').read_text(encoding='utf-8')
+n = len(re.findall(r'サーバ(?!ー)', t))
+t = re.sub(r'サーバ(?!ー)', 'サーバー', t)
+print('サーバ→サーバー', n)
+# 2 zip の中の index.html を直接開いても表示されるよう、画像をHTMLに埋め込む（images/ にも同じファイルを残す）
+for name in ('mail-maintenance.png', 'swc-logo.png'):
+    old = f'src="images/{name}"'
+    if t.count(old) != 1:
+        raise SystemExit(f'{old} が {t.count(old)} 件')
+    b64 = base64.b64encode((out / 'images' / name).read_bytes()).decode()
+    t = t.replace(old, f'src="data:image/png;base64,{b64}"')
+# 3 スマホ幅で1文字だけ次の行に落ちる3か所
+for a, b in (('<li>ドメインの更新を忘れてしまう</li>', '<li>ドメインの更新を<span class="nobr">忘れてしまう</span></li>'),
+             ('<h3 class="mt-point-ttl">Web環境を安全に保つためのポイント</h3>', '<h3 class="mt-point-ttl">Web環境を安全に保つ<span class="nobr">ためのポイント</span></h3>'),
+             ('対応内容：メールサーバーの保守管理</p>', '対応内容：<span class="nobr">メールサーバーの</span><span class="nobr">保守管理</span></p>')):
+    if t.count(a) != 1:
+        raise SystemExit(f'{a} が {t.count(a)} 件')
+    t = t.replace(a, b)
+(out / 'index.html').write_text(t, encoding='utf-8')
+print('ok ver1.1')
